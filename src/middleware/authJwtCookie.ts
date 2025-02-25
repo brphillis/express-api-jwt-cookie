@@ -15,6 +15,8 @@ export const authJwtCookie = (
   const JWT_SecretKey = process.env.JWT_SECRET!;
   const token = req.cookies.token;
 
+  console.log("token", token);
+
   try {
     const user = jwt.verify(token, JWT_SecretKey) as JwtPayload;
     req.user = user;

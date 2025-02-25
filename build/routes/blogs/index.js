@@ -13,7 +13,6 @@ exports.blogs.get("/", (req, res) => {
     });
 });
 exports.blogs.post("/:id", (req, res) => {
-    const { id } = req.params;
     const { content } = req.body;
     if (!content) {
         res.status(418).send({ message: "we need content" });

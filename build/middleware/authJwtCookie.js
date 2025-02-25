@@ -10,6 +10,7 @@ const authJwtCookie = (req, res, next) => {
     dotenv_1.default.config();
     const JWT_SecretKey = process.env.JWT_SECRET;
     const token = req.cookies.token;
+    console.log("token", token);
     try {
         const user = jsonwebtoken_1.default.verify(token, JWT_SecretKey);
         req.user = user;

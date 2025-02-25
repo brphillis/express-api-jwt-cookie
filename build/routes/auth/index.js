@@ -31,51 +31,46 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.login = void 0;
-const users_json_1 = __importDefault(require("../../mock_data/users.json"));
+exports.auth = void 0;
 const express_1 = __importDefault(require("express"));
 const config = __importStar(require("../../config"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-exports.login = express_1.default.Router();
-const JWT_SecretKey = config.JWT_SECRET;
-const getUser = (username) => __awaiter(void 0, void 0, void 0, function* () {
-    const foundUser = users_json_1.default.find((user) => user.username === username);
-    return foundUser;
-});
-exports.login.post("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { username, password } = req.body;
-    const user = yield getUser(username);
-    if (!user) {
-        return res.status(403).json({
-            error: "User not found",
-        });
+exports.auth = express_1.default.Router();
+// Ensure environment variables are set
+const JWT_SECRET_KEY = config.JWT_SECRET;
+const API_SECRET_KEY = config.API_SECRET;
+if (!JWT_SECRET_KEY || !API_SECRET_KEY) {
+    throw new Error("JWT_SECRET or API_SECRET is not defined in the configuration.");
+}
+exports.auth.post("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { apiSecret } = req.body;
+    // Validate the API secret
+    if (!apiSecret) {
+        return res.status(400).json({ error: "API secret is required." });
     }
-    if (user.password !== password) {
-        return res.status(403).json({
-            error: "Incorrect password",
-        });
+    if (apiSecret !== API_SECRET_KEY) {
+        return res.status(401).json({ error: "Invalid API secret." });
     }
-    const { password: _ } = user, userWithoutPassword = __rest(user, ["password"]);
-    const token = jsonwebtoken_1.default.sign({ user: userWithoutPassword }, JWT_SecretKey, {
-        expiresIn: "1h",
-    });
-    res.cookie("token", token, {
-        httpOnly: true,
-    });
-    res.json({ token });
+    try {
+        // Create a JWT token (add payload data if needed)
+        const token = jsonwebtoken_1.default.sign({ userId: "exampleUserId" }, // Add relevant payload data here
+        JWT_SECRET_KEY, { expiresIn: "1h" } // Token expires in 1 hour
+        );
+        // Set the token in an HTTP-only cookie
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict", // Prevent CSRF attacks
+        });
+        // Return the token in the response
+        res.status(200).json({ message: "Auth successful", token });
+    }
+    catch (error) {
+        console.error("Error generating JWT token:", error);
+        res.status(500).json({ error: "Internal server error." });
+    }
 }));
